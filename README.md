@@ -27,3 +27,5 @@ code is the same. The table shows the differences:
                       from start to end or in reverse.
 
 
+The 6502 (2) format decoder is one byte shorter than the old (3) format.
+
