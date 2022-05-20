@@ -36,17 +36,6 @@ copy_init     lda zx0_ini_block-1, y
               dey
               bne copy_init
 
-unZX0
-              ; Initial offset is "-1":
-              ;ldy   #$ff
-              ;sty   offset
-              ;sty   offset+1
-              ; Y is 0 through all the code
-              ;iny
-              ; Initial bit reserve: empty
-              ;lda   #$80
-              ;sta   bitr
-
 ; Decode literal: Ccopy next N bytes from compressed file
 ;    Elias(length)  byte[1]  byte[2]  ...  byte[N]
 decode_literal
