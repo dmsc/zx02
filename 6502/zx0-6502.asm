@@ -2,7 +2,7 @@
 ; ---------------------------
 ;
 ; Decompress ZX0 data (6502 optimized format), optimized for
-; minimal size - 148 bytes.
+; minimal size - 146 bytes.
 ;
 ; Compress with:
 ;    zx0 -2 input.bin output.zx0
@@ -110,29 +110,25 @@ get_elias
               clc
 get_elias_carry
               ; Initialize return value to #1
-              lda   #1
+              ldx   #1
               sty   elias_h
 elias_loop
               ; Get one bit - use ROL to allow injecting one bit at start
               rol   bitr
               bne   @+
               ; Read new bit from stream
-              tax
               jsr   get_byte
               ;sec   ; not needed, C=1 guaranteed from last bit
               rol   @
               sta   bitr
-              txa
 @
-              bcs   elias_get
-
-              ; Got 1, stop reading
-              tax
-exit          rts
+              txa
+              bcc   exit  ; Got ending bit, stop reading
 
 elias_get     ; Read next data bit to LEN
               asl   bitr
               rol   @
+              tax
               rol   elias_h
               bcc   elias_loop
 
@@ -141,6 +137,7 @@ get_byte
               inc   ZX0_src
               bne   @+
               inc   ZX0_src+1
+exit
 @             rts
 
 put_byte
