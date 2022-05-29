@@ -23,9 +23,24 @@ Compared to ZX0, the differences are:
 * It is possible to start with any initial offset, the 6502 decoders included
   assume initial offset 1, but changing it does not make the decoder bigger.
 
+With the above changes, compared with the original `ZX02` have:
+
+* Worst case expansion for random data is bigger than the original, 1.01% for
+  `ZX02` compared with 0.8% for `ZX0`
+
+* Compression for long repeated runs is also lower, original can encode runs
+  of 1K with 4 bytes, we need 12 bytes.
+
+* Code and 16 bit data can compress a lot more than with the original, as it
+  is possible to change the offset at any place in the input.
+
+So, this compressor is better suited to smaller data, and specially when you
+need the de-compressor code to be as small as possible.
+
 ## 6502 decompressors
 
-There are two 6502 assembly decoders:
+There are two 6502 assembly decoders, both with ROM-able code and using 8 bytes
+of zero-page:
 
 * Small decoder, 130 bytes: [zx02-small.asm](6502/zx02-small.asm)
 * Fast decoder, 175 bytes: [zx02-fast.asm](6502/zx02-fast.asm)
@@ -34,4 +49,9 @@ There are two 6502 assembly decoders:
 
 There is a C decompressor command `dzx02` that supports all variations of the
 format, including starting offsets and backward encode/decode.
+
+## Downloads
+
+You can download pre-compiled compressor and decompressor binaries in the
+[GitHub releases area](https://github.com/dmsc/zx02/releases/).
 
