@@ -8,7 +8,10 @@
 BUILD=build
 
 # Compiler flags
-CFLAGS=-Og -g -Wall -flto -DNDEBUG
+CFLAGS=-O3 -g -Wall -flto -DNDEBUG
+
+# Cross compilation rule
+CROSS=
 
 # List of programs to build
 PROGRAMS=\
