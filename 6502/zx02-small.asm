@@ -1,11 +1,11 @@
 ; De-compressor for ZX0 files
 ; ---------------------------
 ;
-; Decompress ZX0 data (6502 old optimized format), optimized for
-; minimal size - 149 bytes.
+; Decompress ZX0 data (6502 optimized format), optimized for minimal size:
+;  130 bytes code, 76.5 cycles/byte in test file.
 ;
 ; Compress with:
-;    zx0 -3 input.bin output.zx0
+;    zx0 -2 input.bin output.zx0
 ;
 ; (c) 2022 DMSC
 ; Code under MIT license, see LICENSE file.
@@ -17,8 +17,7 @@ offset          equ ZP+0
 ZX0_src         equ ZP+2
 ZX0_dst         equ ZP+4
 bitr            equ ZP+6
-elias_h         equ ZP+7
-pntr            equ ZP+8
+pntr            equ ZP+7
 
             ; Initial values for offset, source, destination and bitr
 zx0_ini_block
@@ -43,21 +42,17 @@ decode_literal
 
 cop0          jsr   get_byte
               jsr   put_byte
-
               bne   cop0
-              dec   elias_h
-              bpl   cop0
 
               asl   bitr
               bcs   dzx0s_new_offset
 
 ; Copy from last offset (repeat N bytes from last offset)
 ;    Elias(length)
-              jsr   get_elias_carry ; Use "_carry" as C already = 0, it is a little faster.
+              jsr   get_elias
 dzx0s_copy
               lda   ZX0_dst
-              clc
-              sbc   offset
+              sbc   offset  ; C=0 from get_elias
               sta   pntr
               lda   ZX0_dst+1
               sbc   offset+1
@@ -69,10 +64,7 @@ cop1
               bne   @+
               inc   pntr+1
 @             jsr   put_byte
-
               bne   cop1
-              dec   elias_h
-              bpl   cop1
 
               asl   bitr
               bcc   decode_literal
@@ -80,70 +72,69 @@ cop1
 ; Copy from new offset (repeat N bytes from new offset)
 ;    Elias(MSB(offset))  LSB(offset)  Elias(length-1)
 dzx0s_new_offset
-              ; Read elias code
+              ; Read elias code for high part of offset
               jsr   get_elias
-              beq   exit  ; Read a $FF, signals the end
+              beq   exit  ; Read a 0, signals the end
+              ; Decrease and divide by 2
               dex
-              stx   offset+1
+              txa
+              lsr   @
+              sta   offset+1
+
               ; Get low part of offset, a literal 7 bits
               jsr   get_byte
+
               ; Divide by 2
-              lsr   offset+1
               ror   @
               sta   offset
 
-              ; Store the extra bit of offset to our bit reserve,
-              ; to be read by get_elias. Last bit stays in carry.
-              ror   bitr
               ; And get the copy length.
-              ; NOTE: can't jump to the copy because we need to increment
-              ;       the length by 1, this is 8 extra bytes...
-              jsr   get_elias_carry
+              ; Start elias reading with the bit already in carry:
+              ldx   #1
+              jsr   elias_skip1
 
-@             inx
-              bne   @+
-              inc   elias_h
-@             bne   dzx0s_copy
+              inx
+              bcc   dzx0s_copy
 
 ; Read an elias-gamma interlaced code.
 ; ------------------------------------
 get_elias
-              clc
-get_elias_carry
               ; Initialize return value to #1
-              lda   #1
-              sty   elias_h
-elias_loop
-              ; Get one bit - use ROL to allow injecting one bit at start
-              rol   bitr
-              bne   @+
-              ; Read new bit from stream
+              ldx   #1
+              bne   elias_start
+
+elias_get     ; Read next data bit to result
+              asl   bitr
+              rol   @
               tax
+
+elias_start
+              ; Get one bit
+              asl   bitr
+              bne   elias_skip1
+
+              ; Read new bit from stream
               jsr   get_byte
               ;sec   ; not needed, C=1 guaranteed from last bit
               rol   @
               sta   bitr
+
+elias_skip1
               txa
-@
-              bcc   elias_get
+              bcs   elias_get
+              ; Got ending bit, stop reading
+              rts
 
-              ; Got 1, stop reading
-              tax
-exit          rts
-
-elias_get     ; Read next data bit to LEN
-              asl   bitr
-              rol   @
-              rol   elias_h
-              bcc   elias_loop
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 get_byte
               lda   (ZX0_src), y
               inc   ZX0_src
               bne   @+
               inc   ZX0_src+1
+exit
 @             rts
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 put_byte
               sta   (ZX0_dst),y
               inc   ZX0_dst

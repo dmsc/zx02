@@ -1,9 +1,6 @@
 /*
- * De-compressor for ZX0 files
- * ---------------------------
- *
- * This is a reimplementation capable of decompressing all variants of ZX0
- * compressed files.
+ * De-compressor for ZX02 files
+ * ----------------------------
  *
  * (c) 2022 DMSC
  * Code under MIT license, see LICENSE file.
@@ -15,12 +12,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef NDEBUG
+#define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define DPRINTF(...)                                                                       \
+    do {                                                                                   \
+    } while (0)
+#endif
+
 // Input / Output buffer size.
 // backward mode don't support files bigger than one buffer.
 #define BUF_SIZE (1 << 17)
 #define BUF_MASK (BUF_SIZE-1)
 
-struct zx0_state {
+struct zx02_state {
     uint8_t bitr;       // bit reserve
     uint8_t extra_bit;  // extra bit to inject
     uint16_t offset;    // last offset
@@ -32,15 +37,14 @@ struct zx0_state {
     FILE *in;           // input file
     FILE *out;          // output file
     int elias_end;      // bit to end elias code (1 == standard)
-    int offset_lsb_neg; // negated LSB of offset values
-    int offset_msb_neg; // negated MSB of offset values
+    int elias_short;    // short Elias codes
     int backward;       // backward encode/decode
     uint8_t *output;    // output data
     uint8_t *input;     // input data
     const char *err;    // error message
 };
 
-int get_byte(struct zx0_state *s)
+int get_byte(struct zx02_state *s)
 {
     if( s->ipos == s->iend )
     {
@@ -60,7 +64,7 @@ int get_byte(struct zx0_state *s)
     return s->input[s->ipos];
 }
 
-int get_bit(struct zx0_state *s)
+int get_bit(struct zx02_state *s)
 {
     int bit;
     if(s->extra_bit)
@@ -90,7 +94,7 @@ int get_bit(struct zx0_state *s)
     return bit;
 }
 
-void put_byte(struct zx0_state *s, uint8_t b)
+void put_byte(struct zx02_state *s, uint8_t b)
 {
     s->output[s->opos] = b;
     if( s->backward )
@@ -108,24 +112,35 @@ void put_byte(struct zx0_state *s, uint8_t b)
 }
 
 // Reads interlaced elias code
-uint16_t get_elias(struct zx0_state *s, int neg)
+uint16_t get_elias(struct zx02_state *s)
 {
-    uint16_t ret = neg ? 0xFFFE : 1;
-    for(int i=0; i<16; i++)
+    uint16_t ret = 1;
+    for(int i=0; i<=8; i++)
     {
         int b = get_bit(s);
         if(b == s->elias_end)
             return ret;
+
+        // Short Elias codes omit last two bits.
+        if(s->elias_short && ret == 0x80)
+            return 0x100;
+
         ret = (ret << 1) | get_bit(s);
+        if(ret > 0x100)
+        {
+            s->err = "unsupported Elias gamma value > 256";
+            return 0;
+        }
     }
     if( !s->err )
         s->err = "bad elias-gamma value";
     return 0;
 }
 
-void decode_literal(struct zx0_state *s)
+void decode_literal(struct zx02_state *s)
 {
-    uint16_t len = get_elias(s, 0);
+    uint16_t len = get_elias(s);
+    DPRINTF("%x: lit(%d)\n", s->opos, len);
     if( !len )
         return;
     while(len--)
@@ -140,10 +155,15 @@ void decode_literal(struct zx0_state *s)
     }
 }
 
-void decode_match(struct zx0_state *s, int len_add)
+void decode_match(struct zx02_state *s, int len_add)
 {
-    uint16_t len = get_elias(s, 0) + len_add;
+    uint16_t len = get_elias(s) + len_add;
     unsigned pos = s->opos;
+    DPRINTF("%x: match(%d, %d)\n", s->opos, len, s->offset);
+
+    if( len > 0x100 )
+        len = len & 0xFF;
+
     if( s->backward )
         pos = BUF_MASK & (pos + s->offset + 1);
     else
@@ -162,30 +182,26 @@ void decode_match(struct zx0_state *s, int len_add)
     }
 }
 
-int decode_offset(struct zx0_state *s)
+int decode_offset(struct zx02_state *s)
 {
-    uint16_t msb = get_elias(s, s->offset_msb_neg);
+    uint16_t msb = get_elias(s);
     if((msb & 0xFF) == 0)
         return 1;
-    if( s->offset_msb_neg )
-        msb = (msb ^ 0xFFFF) - 1;
-    else
-        msb = msb - 1;
+    msb = msb - 1;
     int off = get_byte(s);
     if( off == EOF )
     {
             s->err = "truncated input file";
             return 1;
     }
+    DPRINTF("offset(%x:%02x=%d) ", msb, off, (msb << 7) | (off >> 1));
     // las bit in offset LSB is used as next bit to be read:
     s->extra_bit = 2 | (off & 1);
-    if( s->offset_lsb_neg )
-        off = off ^ 0xFE;
     s->offset = (msb << 7) | (off >> 1);
     return 0;
 }
 
-int decode_loop(struct zx0_state *s)
+int decode_loop(struct zx02_state *s)
 {
     int state = 0; // LITERAL
     while(1)
@@ -229,7 +245,7 @@ int decode_loop(struct zx0_state *s)
 }
 
 // Decompress file
-int decompress(struct zx0_state *s)
+int decompress(struct zx02_state *s)
 {
     s->output = calloc(1, BUF_SIZE);
     s->opos = s->backward ? BUF_MASK : 0;
@@ -259,7 +275,7 @@ int decompress(struct zx0_state *s)
             fwrite(s->output, s->opos, 1, s->out);
     }
 
-    if( s->ipos != s->iend )
+    if( s->ipos != s->iend && !e)
     {
         s->err = "extra bytes at input";
         e = 1;
@@ -278,9 +294,10 @@ void print_help(const char *name)
     fprintf(stderr,
             "Usage: %s [options] [input] [output]\n"
             "Options:\n"
-            " -b    backward encoded file\n"
-            " -c    classic (v1.0) file\n"
-            " -2    6502 optimized file\n"
+            "  -b       backward encoded file\n"
+            "  -s       use shorted Elias codes\n"
+            "  -e       inverted Elias code end bit\n"
+            "  -o <n>   use 'n' as starting offset\n"
             "\n"
             "If no output, write result to stdout.\n"
             "If no input, read from stdin.\n"
@@ -290,10 +307,9 @@ void print_help(const char *name)
 
 int main(int argc, char **argv)
 {
-    struct zx0_state s;
+    struct zx02_state s;
     memset(&s, 0, sizeof(s));
 
-    int mode = 0;
     const char *in_name = 0, *out_name = 0;
 
     for(int i=1; i<argc; i++)
@@ -304,12 +320,20 @@ int main(int argc, char **argv)
             int c = arg[1];
             if( c == 'b' )
                 s.backward = 1;
-            else if( c == 'c' )
-                mode = 1;
-            else if( c == '2' )
-                mode = 2;
-            else if( c == '3' )
-                mode = 3;
+            else if( c == 's' )
+                s.elias_short = 1;
+            else if( c == 'e' )
+                s.elias_end = 1;
+            else if( c == 'o' )
+            {
+                i++;
+                if( i >= argc )
+                {
+                    fprintf(stderr, "ERROR: missing value for option -o\n");
+                    print_help(argv[0]);
+                }
+                s.offset = atoi(argv[i]);
+            }
             else if( c == 'h' )
                 print_help(argv[0]);
             else
@@ -347,34 +371,6 @@ int main(int argc, char **argv)
         fprintf(stderr,"%s: can't open output file - %s\n",
                 out_name, strerror(errno));
         return 1;
-    }
-
-    switch(mode)
-    {
-        case 0:
-            // V 2.0
-            s.elias_end = !s.backward;
-            s.offset_lsb_neg = !s.backward;
-            s.offset_msb_neg = !s.backward;
-            break;
-        case 1:
-            // CLASSIC
-            s.elias_end = !s.backward;
-            s.offset_lsb_neg = !s.backward;
-            s.offset_msb_neg = 0;
-            break;
-        case 2:
-            // 6502
-            s.elias_end = 0;
-            s.offset_lsb_neg = 0;
-            s.offset_msb_neg = 0;
-            break;
-        case 3:
-            // 6502 (*)
-            s.elias_end = 1;
-            s.offset_lsb_neg = 0;
-            s.offset_msb_neg = 0;
-            break;
     }
 
     if( decompress(&s) )

@@ -23,8 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define INITIAL_OFFSET 1
-
+#define NDEBUG 1
 #define FALSE 0
 #define TRUE 1
 
@@ -37,10 +36,18 @@ typedef struct block_t {
     int references;
 } BLOCK;
 
+typedef struct zx02_state_t {
+    unsigned char *input_data;
+    int input_size;
+    int skip;
+    int initial_offset;
+    int backwards_mode;
+    int elias_short_code;
+    int elias_ending_bit;
+    int offset_limit;
+} zx02_state;
+
 BLOCK *allocate(int bits, int index, int offset, BLOCK *chain);
-
 void assign(BLOCK **ptr, BLOCK *chain);
-
-BLOCK *optimize(unsigned char *input_data, int input_size, int skip, int offset_limit);
-
-unsigned char *compress(BLOCK *optimal, unsigned char *input_data, int input_size, int skip, int backwards_mode, int invert_mode, int m6502_mode, int *output_size, int *delta);
+BLOCK *optimize(zx02_state *s);
+unsigned char *compress(BLOCK *optimal, zx02_state *s, int *output_size, int *delta);
