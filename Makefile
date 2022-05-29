@@ -15,6 +15,9 @@ PROGRAMS=\
       zx02\
       dzx02\
 
+# Distribution ZIP file name
+ZIPFILE=zx02-progs.zip
+
 # Sources for all programs
 SRC_zx02=\
     src/compress.c\

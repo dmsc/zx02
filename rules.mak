@@ -16,6 +16,12 @@ endef
 
 $(foreach prog,$(PROGRAMS),$(eval $(call PROGRAM_template,$(prog))))
 
+dist: $(BUILD)/$(ZIPFILE)
+
+$(BUILD)/$(ZIPFILE): $(BUILD_PRG) README.md LICENSE LICENSE.zx0 | build
+	strip $(BUILD_PRG)
+	rm -f $@
+	zip -9j $@ $^
 
 clean:
 	rm -f $(OBJS_ALL)
