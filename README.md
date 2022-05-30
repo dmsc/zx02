@@ -3,7 +3,13 @@
 This is a modified version of the [ZX0](https://github.com/einar-saukas/ZX0)
 compressor to make the decompressor smaller and faster on a 6502.
 
+The intended use is compressing data up to about 16kB, or where the
+decompressor size should be as small as possible.
+
 **The compression format is not compatible with ZX0**
+
+
+## Features
 
 Compared to ZX0, the differences are:
 
@@ -37,19 +43,23 @@ With the above changes, compared with the original `ZX02` have:
 So, this compressor is better suited to smaller data, and specially when you
 need the de-compressor code to be as small as possible.
 
+
 ## 6502 decompressors
 
 There are three 6502 assembly decoders, all with ROM-able code and using 8
 bytes of zero-page:
 
-* Smallest decoder, 130 bytes: [zx02-small.asm](6502/zx02-small.asm)
 * Fast and small decoder, 138 bytes: [zx02-optim.asm](6502/zx02-optim.asm)
+  **This is the recommended decompressor for most users**
+* Smallest decoder, 130 bytes: [zx02-small.asm](6502/zx02-small.asm)
 * Faster decoder, 175 bytes: [zx02-fast.asm](6502/zx02-fast.asm)
+
 
 ## C decompressor
 
 There is a C decompressor command `dzx02` that supports all variations of the
 format, including starting offsets and backward encode/decode.
+
 
 ## Downloads
 
