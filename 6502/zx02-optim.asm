@@ -1,8 +1,8 @@
 ; De-compressor for ZX02 files
 ; ----------------------------
 ;
-; Decompress ZX02 data (6502 optimized format), optimized for speed:
-;  175 bytes code, 48.1 cycles/byte in test file.
+; Decompress ZX02 data (6502 optimized format), optimized for speed and size
+;  138 bytes code, 58.0 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 input.bin output.zx0
@@ -39,34 +39,17 @@ copy_init     lda zx0_ini_block-1, y
 ;    Elias(length)  byte[1]  byte[2]  ...  byte[N]
 decode_literal
               jsr   get_elias
-              dex
-
-              txa
-              sec
-              adc   ZX0_src
-              sta   ZX0_src
-              bcs   @+
-              dec   ZX0_src+1
-@
-              txa
-              sec
-              adc   ZX0_dst
-              sta   ZX0_dst
-              bcs   @+
-              dec   ZX0_dst+1
-@
-
-              txa
-              eor       #$FF
-              tay
 
 cop0          lda   (ZX0_src), y
-              sta   (ZX0_dst), y
-              iny
-              bne   cop0
-
+              inc   ZX0_src
+              bne   @+
               inc   ZX0_src+1
+@             sta   (ZX0_dst),y
+              inc   ZX0_dst
+              bne   @+
               inc   ZX0_dst+1
+@             dex
+              bne   cop0
 
               asl   bitr
               bcs   dzx0s_new_offset
@@ -74,7 +57,6 @@ cop0          lda   (ZX0_src), y
 ; Copy from last offset (repeat N bytes from last offset)
 ;    Elias(length)
               jsr   get_elias
-              dex
 dzx0s_copy
               lda   ZX0_dst
               sbc   offset  ; C=0 from get_elias
@@ -83,30 +65,17 @@ dzx0s_copy
               sbc   offset+1
               sta   pntr+1
 
-              txa
-;              sec
-              adc   pntr
-              sta   pntr
-              bcs   @+
-              dec   pntr+1
-              sec
-@
-              txa
-              adc   ZX0_dst
-              sta   ZX0_dst
-              bcs   @+
-              dec   ZX0_dst+1
-@
-              txa
-              eor       #$FF
-              tay
-
-cop1          lda   (pntr), y
-              sta   (ZX0_dst), y
-              iny
-              bne   cop1
-
+cop1
+              lda   (pntr), y
+              inc   pntr
+              bne   @+
+              inc   pntr+1
+@             sta   (ZX0_dst),y
+              inc   ZX0_dst
+              bne   @+
               inc   ZX0_dst+1
+@             dex
+              bne   cop1
 
               asl   bitr
               bcc   decode_literal
@@ -129,51 +98,47 @@ dzx0s_new_offset
               bne   @+
               inc   ZX0_src+1
 @
-              ; Divide by 2 low part
+              ; Divide by 2
               ror   @
               sta   offset
 
               ; And get the copy length.
               ; Start elias reading with the bit already in carry:
               ldx   #1
-              bcc   dzx0s_copy
               jsr   elias_skip1
 
+              inx
               bcc   dzx0s_copy
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Read an elias-gamma interlaced code.
 ; ------------------------------------
 get_elias
               ; Initialize return value to #1
               ldx   #1
-              ; Get first bit
-              asl   bitr
-              beq   elias_byte  ; Need to read a new byte
-elias_skip1
-              txa
-              ; Got ending bit, stop reading
-              bcc   exit
-elias_get     ; Read next data bit to LEN
+              bne   elias_start
+
+elias_get     ; Read next data bit to result
               asl   bitr
               rol   @
               tax
+
+elias_start
+              ; Get one bit
               asl   bitr
               bne   elias_skip1
 
-elias_byte
-              ; Read new byte from stream
+              ; Read new bit from stream
               lda   (ZX0_src), y
               inc   ZX0_src
               bne   @+
               inc   ZX0_src+1
-@
-              ;sec   ; not needed, C=1 guaranteed from last bit
+@             ;sec   ; not needed, C=1 guaranteed from last bit
               rol   @
               sta   bitr
+
+elias_skip1
               txa
-              ; Got ending bit, stop reading
               bcs   elias_get
+              ; Got ending bit, stop reading
 exit
               rts
-

@@ -1,11 +1,11 @@
-; De-compressor for ZX0 files
-; ---------------------------
+; De-compressor for ZX02 files
+; ----------------------------
 ;
-; Decompress ZX0 data (6502 optimized format), optimized for minimal size:
-;  130 bytes code, 76.5 cycles/byte in test file.
+; Decompress ZX02 data (6502 optimized format), optimized for minimal size:
+;  130 bytes code, 72.6 cycles/byte in test file.
 ;
 ; Compress with:
-;    zx0 -2 input.bin output.zx0
+;    zx02 input.bin output.zx0
 ;
 ; (c) 2022 DMSC
 ; Code under MIT license, see LICENSE file.

@@ -39,11 +39,12 @@ need the de-compressor code to be as small as possible.
 
 ## 6502 decompressors
 
-There are two 6502 assembly decoders, both with ROM-able code and using 8 bytes
-of zero-page:
+There are three 6502 assembly decoders, all with ROM-able code and using 8
+bytes of zero-page:
 
-* Small decoder, 130 bytes: [zx02-small.asm](6502/zx02-small.asm)
-* Fast decoder, 175 bytes: [zx02-fast.asm](6502/zx02-fast.asm)
+* Smallest decoder, 130 bytes: [zx02-small.asm](6502/zx02-small.asm)
+* Fast and small decoder, 138 bytes: [zx02-optim.asm](6502/zx02-optim.asm)
+* Faster decoder, 175 bytes: [zx02-fast.asm](6502/zx02-fast.asm)
 
 ## C decompressor
 
