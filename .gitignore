@@ -1,1 +1,4 @@
+*.obx
+tests/OUT.BIN
+tests/data.zx02
 build/
