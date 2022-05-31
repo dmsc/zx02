@@ -66,3 +66,60 @@ format, including starting offsets and backward encode/decode.
 You can download pre-compiled compressor and decompressor binaries in the
 [GitHub releases area](https://github.com/dmsc/zx02/releases/).
 
+
+## Compressor usage
+
+The compressor accepts the following options:
+
+### Standard Options
+
+* **-f**
+
+  Force overwrite of output file if it exists already.
+
+* **-q**
+
+  Use a quick non-optimal compression, useful during development to avoid
+  waiting for the compression of long files.
+
+### Advanced Compression Options
+
+* **-p _n_**
+
+  Skip the first `n` bytes of the input file when compressing, but use it as a
+  *dictionary* for the following data. This is useful to make the compressed
+  file smaller if you have fixes data already in memory just before the data to
+  decompress.
+
+* **-o _n_**
+
+  Use `n` as starting offset. The standard decompressor uses the value `1` as
+  starting offset for matches - this is a good overall value, but certain files
+  could compress better with a different value - for example, 16 bit data could
+  benefit using a starting offset of `2`.
+
+  To decompress a file compressed with this option, you need to alter the
+  decompressor code, in the `zx0_ini_block` the first byte is the starting
+  offset minus 1.
+
+
+### Options incompatible with standard decompressor
+
+* **-b**
+
+  Compress *backwards*, from the end of the file to the start.  This needs a
+  decompressor that also reads the data from the end, would probably be bigger
+  and slower in 6502 assembly, so it is not supported in the ASM code.
+
+* **-s**
+
+  Use shorted Elias codes. This produces files that are very slightly smaller,
+  by limiting the Elias gamma code lengths - but the decompressor would be
+  bigger.
+
+* **-e**
+
+  Inverted Elias code end bit. This option changes the format so that a `1` bit
+  ends the Elias gamma codes - the default was chosen to make the 6502 decoder
+  one byte shorter.
+
