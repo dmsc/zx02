@@ -39,6 +39,7 @@ struct zx02_state {
     int elias_end;   // bit to end elias code (1 == standard)
     int elias_short; // short Elias codes
     int backward;    // backward encode/decode
+    int zx1_mode;    // ZX1 mode
     uint8_t *output; // output data
     uint8_t *input;  // input data
     const char *err; // error message
@@ -163,20 +164,47 @@ void decode_match(struct zx02_state *s, int len_add) {
 }
 
 int decode_offset(struct zx02_state *s) {
-    uint16_t msb = get_elias(s);
-    if ((msb & 0xFF) == 0)
-        return 1;
-    msb = msb - 1;
-    int off = get_byte(s);
-    if (off == EOF) {
-        s->err = "truncated input file";
-        return 1;
+    if (s->zx1_mode)
+    {
+        int off = get_byte(s);
+        if (off == EOF) {
+            s->err = "truncated input file";
+            return 1;
+        }
+        if (off == 255) // Detect ending
+            return 1;
+        if (off > 127) {
+            int msb = off;
+            int lsb = get_byte(s);
+            if (lsb == EOF) {
+                s->err = "truncated input file";
+                return 1;
+            }
+            off = ((msb << 8) | lsb) & 0x7FFF;
+            DPRINTF("offset(%x:%x=%d) ", msb, lsb, off);
+        } else {
+            DPRINTF("offset(%x=%d) ", off, off);
+        }
+        s->offset = off;
+        return 0;
     }
-    DPRINTF("offset(%x:%02x=%d) ", msb, off, (msb << 7) | (off >> 1));
-    // las bit in offset LSB is used as next bit to be read:
-    s->extra_bit = 2 | (off & 1);
-    s->offset = (msb << 7) | (off >> 1);
-    return 0;
+    else
+    {
+        uint16_t msb = get_elias(s);
+        if ((msb & 0xFF) == 0)
+            return 1;
+        msb = msb - 1;
+        int off = get_byte(s);
+        if (off == EOF) {
+            s->err = "truncated input file";
+            return 1;
+        }
+        DPRINTF("offset(%x:%02x=%d) ", msb, off, (msb << 7) | (off >> 1));
+        // las bit in offset LSB is used as next bit to be read:
+        s->extra_bit = 2 | (off & 1);
+        s->offset = (msb << 7) | (off >> 1);
+        return 0;
+    }
 }
 
 int decode_loop(struct zx02_state *s) {
@@ -266,6 +294,7 @@ void print_help(const char *name) {
             "  -b       backward encoded file\n"
             "  -s       use shorted Elias codes\n"
             "  -e       inverted Elias code end bit\n"
+            "  -1       ZX1 offset format\n"
             "  -o <n>   use 'n' as starting offset\n"
             "\n"
             "If no output, write result to stdout.\n"
@@ -291,6 +320,8 @@ int main(int argc, char **argv) {
                 s.elias_short = 1;
             else if (c == 'e')
                 s.elias_end = 1;
+            else if (c == '1')
+                s.zx1_mode = 1;
             else if (c == 'o') {
                 i++;
                 if (i >= argc) {

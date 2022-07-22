@@ -58,6 +58,13 @@ int elias_gamma_bits_1(zx02_state *s, int value) {
         return elias_gamma_bits(s, value - 1);
 }
 
+int offset_bits(zx02_state *s, int value) {
+    if (s->zx1_mode)
+        return (value > 127) ? 17 : 9;
+    else
+        return 8 + elias_gamma_bits(s, value / 128 + 1);
+}
+
 BLOCK *optimize(zx02_state *s) {
     BLOCK **last_literal;
     BLOCK **last_match;
@@ -132,8 +139,7 @@ BLOCK *optimize(zx02_state *s) {
                     } while (best_length_size < match_length[offset]);
                 }
                 length = best_length[match_length[offset]];
-                bits = optimal[index - length]->bits + 8 +
-                       elias_gamma_bits(s, (offset - 1) / 128 + 1) +
+                bits = optimal[index - length]->bits + offset_bits(s, offset) +
                        elias_gamma_bits_1(s, length);
                 if (!last_match[offset] || last_match[offset]->index != index ||
                     last_match[offset]->bits > bits) {

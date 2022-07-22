@@ -44,6 +44,7 @@ typedef struct zx02_state_t {
     int backwards_mode;
     int elias_short_code;
     int elias_ending_bit;
+    int zx1_mode;
     int offset_limit;
 } zx02_state;
 

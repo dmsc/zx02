@@ -1,7 +1,8 @@
 # ZX02: 6502 optimized compression
 
 This is a modified version of the [ZX0](https://github.com/einar-saukas/ZX0)
-compressor to make the decompressor smaller and faster on a 6502.
+and [ZX1](https://github.com/einar-saukas/ZX1) compressors to make the
+decompressor smaller and faster on a 6502.
 
 The intended use is compressing data up to about 16kB, or where the
 decompressor size should be as small as possible.
@@ -43,6 +44,15 @@ With the above changes, compared with the original `ZX02` have:
 So, this compressor is better suited to smaller data, and specially when you
 need the de-compressor code to be as small as possible.
 
+In the `ZX1` mode, in addition to the changes above, the format also differs on
+how the offsets are stored:
+
+ * For offsets up to 127, the offset is stored as one byte.
+
+ * For offsets greater than 127, two bytes are stored, the first byte is the
+   high part of the offset (with the bit 7 set) and the second byte is the
+   low part of the offset.
+
 
 ## 6502 decompressors
 
@@ -81,6 +91,12 @@ The compressor accepts the following options:
 
   Use a quick non-optimal compression, useful during development to avoid
   waiting for the compression of long files.
+
+* **-1**
+
+  Compress in the `ZX1` mode, this is a simple format that sacrifices about
+  1.5% compression but decodes faster.
+
 
 ### Advanced Compression Options
 

@@ -29,7 +29,8 @@
 
 #include "zx02.h"
 
-#define MAX_OFFSET_ZX02 32640
+#define MAX_OFFSET_ZX02  32640
+#define MAX_OFFSET_ZX102 32511
 #define MAX_OFFSET_FAST 2176
 
 void reverse(unsigned char *first, unsigned char *last) {
@@ -49,6 +50,7 @@ void print_usage(const char *prog) {
             "  -b      Compress backwards\n"
             "  -s      Use shorted Elias codes\n"
             "  -e      Inverted Elias code end bit\n"
+            "  -1      ZX1 offset format\n"
             "  -o <n>  Use 'n' as starting offset\n"
             "  -p <n>  Skip 'n' bytes at input (compress with pre-buffer)\n"
             "  -q      Quick non-optimal compression\n",
@@ -98,6 +100,11 @@ int main(int argc, char *argv[]) {
                 break;
             case 'q':
                 s->offset_limit = MAX_OFFSET_FAST;
+                break;
+            case '1':
+                s->zx1_mode = 1;
+                if (s->offset_limit > MAX_OFFSET_ZX102)
+                    s->offset_limit = MAX_OFFSET_ZX102;
                 break;
             case 'o':
             case 'p':

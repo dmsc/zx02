@@ -106,8 +106,14 @@ unsigned char *compress(BLOCK *optimal, zx02_state *s, int *output_size, int *de
     int i;
     int last_offset = s->initial_offset;
 
-    /* calculate and allocate output buffer - we need to add 18 bits for END marker */
-    *output_size = (optimal->bits + 25) / 8;
+    /* calculate and allocate output buffer */
+    if (s->zx1_mode)
+        /* we need to add 9 bits for END marker */
+        *output_size = (optimal->bits + 9 + 7) / 8;
+    else
+        /* we need to add 18 bits for END marker */
+        *output_size = (optimal->bits + 18 + 7) / 8;
+
     output_data = (unsigned char *)malloc(*output_size);
     bit_size = 0;
     if (!output_data) {
@@ -169,15 +175,29 @@ unsigned char *compress(BLOCK *optimal, zx02_state *s, int *output_size, int *de
             DPRINTF("M-");
             write_bit(1);
 
-            /* copy from new offset MSB */
-            write_interlaced_elias_gamma(s, (optimal->offset - 1) / 128 + 1);
+            if (s->zx1_mode) {
+                int off = optimal->offset - 1;
+                if( off < 128 )
+                    /* copy from new offset LSB */
+                    write_byte(off);
+                else {
+                    /* copy from new offset MSB */
+                    write_byte((off >> 8) | 128);
+                    DPRINTF(" ");
+                    /* copy from new offset LSB */
+                    write_byte(off & 255);
+                }
+            } else {
+                /* copy from new offset MSB */
+                write_interlaced_elias_gamma(s, (optimal->offset - 1) / 128 + 1);
 
-            /* copy from new offset LSB */
-            DPRINTF(" ");
-            write_byte(((optimal->offset - 1) % 128) << 1);
+                /* copy from new offset LSB */
+                DPRINTF(" ");
+                write_byte(((optimal->offset - 1) % 128) << 1);
 
-            /* copy from new offset length */
-            backtrack = TRUE;
+                /* copy from new offset length */
+                backtrack = TRUE;
+            }
             write_interlaced_elias_gamma(s, length - 1);
 
             read_bytes(length, delta);
@@ -190,7 +210,10 @@ unsigned char *compress(BLOCK *optimal, zx02_state *s, int *output_size, int *de
     /* end marker */
     DPRINTF("\nbit size data:  %d bits (%d bytes)\n", bit_size, (bit_size + 7) / 8);
     write_bit(1);
-    write_interlaced_elias_gamma(s, 256);
+    if (s->zx1_mode)
+        write_byte(255);
+    else
+        write_interlaced_elias_gamma(s, 256);
 
     DPRINTF("\nbit size TOTAL: %d bits (%d bytes)\n", bit_size, (bit_size + 7) / 8);
     /* done! */
