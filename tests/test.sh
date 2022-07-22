@@ -17,38 +17,40 @@ wrap() {
     fi
 }
 
+do_test() {
+    wrap mads "-l:${1%.*}.lst" "-t:${1%.*}.lab" "$1"
+    wrap minisim -d "${1%.*}.obx"
+    cycles=$(echo "$cmdout" | tail -1 | sed -e 's/^.*cycles://g')
+    cmp "$TEST" OUT.BIN &&
+        printf "%7d cycles, %2d.%1d cycles/byte: \e[42m TEST PASSED \e[0m\n" \
+               "$cycles" "$(($cycles/$size))" "$(($cycles*10/$size%10))" || (
+        printf "\e[41m TEST NOT PASSED \e[0m\n" && false )
+}
+
 size=$(stat -c %s "$TEST")
 
 echo "-----------------------------------------------------"
 echo "TESTING FILE '$TEST', $size bytes."
-echo " -> Compressing"
+printf " -> Compressing ZX0 based format:"
 wrap ../build/zx02 -f "$TEST" data.zx02
+stat -c " %s bytes" data.zx02
 
+printf " -> Compressing ZX1 based format:"
+wrap ../build/zx02 -1 -f "$TEST" data.zx12
+stat -c " %s bytes" data.zx12
 
-printf " -> Decompress FAST:  "
-wrap mads test-fast.asm
-wrap minisim -d test-fast.obx
-cycles=$(echo "$cmdout" | tail -1 | sed -e 's/^.*cycles://g')
-cmp "$TEST" OUT.BIN &&
-    printf "%7d cycles, %2d.%1d cycles/byte: \e[42m TEST PASSED \e[0m\n" \
-           "$cycles" "$(($cycles/$size))" "$(($cycles*10/$size%10))" || (
-    printf "\e[41m TEST NOT PASSED \e[0m\n" && false )
+printf " -> Decompress ZX02 FAST:  "
+do_test test-fast.asm
 
-printf " -> Decompress OPTIM: "
-wrap mads test-optim.asm
-wrap minisim -d test-optim.obx
-cycles=$(echo "$cmdout" | tail -1 | sed -e 's/^.*cycles://g')
-cmp "$TEST" OUT.BIN &&
-    printf "%7d cycles, %2d.%1d cycles/byte: \e[42m TEST PASSED \e[0m\n" \
-           "$cycles" "$(($cycles/$size))" "$(($cycles*10/$size%10))" || (
-    printf "\e[41m TEST NOT PASSED \e[0m\n" && false )
+printf " -> Decompress ZX02 OPTIM: "
+do_test test-optim.asm
 
-printf " -> Decompress SMALL: "
-wrap mads test-small.asm
-wrap minisim -d test-small.obx
-cycles=$(echo "$cmdout" | tail -1 | sed -e 's/^.*cycles://g')
-cmp "$TEST" OUT.BIN &&
-    printf "%7d cycles, %2d.%1d cycles/byte: \e[42m TEST PASSED \e[0m\n" \
-           "$cycles" "$(($cycles/$size))" "$(($cycles*10/$size%10))" || (
-    printf "\e[41m TEST NOT PASSED \e[0m\n" && false )
+printf " -> Decompress ZX02 SMALL: "
+do_test test-small.asm
+
+printf " -> Decompress ZX02 -1 OPTIM: "
+do_test test-optim-1.asm
+
+printf " -> Decompress ZX02 -1 SMALL: "
+do_test test-small-1.asm
 
