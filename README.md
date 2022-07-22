@@ -47,10 +47,10 @@ need the de-compressor code to be as small as possible.
 In the `ZX1` mode, in addition to the changes above, the format also differs on
 how the offsets are stored:
 
- * For offsets up to 127, the offset is stored as one byte.
+ * For offsets up to 127, the offset is stored as one byte, multiplied by 2.
 
  * For offsets greater than 127, two bytes are stored, the first byte is the
-   high part of the offset (with the bit 7 set) and the second byte is the
+   high part of the offset (with the bit 0 set) and the second byte is the
    low part of the offset.
 
 

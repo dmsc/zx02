@@ -2,7 +2,7 @@
 ; ---------------------------------
 ;
 ; Decompress ZX02 data in ZX1 mode (6502 optimized format), optimized for
-; minimal size: XXX bytes code, XX.X cycles/byte in test file.
+; minimal size: 131 bytes code, 70.6 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 -1 input.bin output.zx1
@@ -77,9 +77,8 @@ dzx0s_new_offset
 
               ; Get low part of offset, a literal 7 bits
               jsr   get_byte
-              tax
-              bpl   offset_ok
-              and   #$7F
+              lsr
+              bcc   offset_ok
               cmp   #$7F
               beq   exit  ; Read a 127, signals the end
 
@@ -104,6 +103,7 @@ get_elias
               bne   elias_start
 
 elias_get     ; Read next data bit to result
+              txa
               asl   bitr
               rol   @
               tax
@@ -120,7 +120,6 @@ elias_start
               sta   bitr
 
 elias_skip1
-              txa
               bcs   elias_get
               ; Got ending bit, stop reading
               rts

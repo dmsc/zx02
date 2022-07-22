@@ -179,10 +179,10 @@ unsigned char *compress(BLOCK *optimal, zx02_state *s, int *output_size, int *de
                 int off = optimal->offset - 1;
                 if( off < 128 )
                     /* copy from new offset LSB */
-                    write_byte(off);
+                    write_byte(off << 1);
                 else {
                     /* copy from new offset MSB */
-                    write_byte((off >> 8) | 128);
+                    write_byte((off >> 7) | 1);
                     DPRINTF(" ");
                     /* copy from new offset LSB */
                     write_byte(off & 255);

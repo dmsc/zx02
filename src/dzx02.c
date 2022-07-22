@@ -166,24 +166,25 @@ void decode_match(struct zx02_state *s, int len_add) {
 int decode_offset(struct zx02_state *s) {
     if (s->zx1_mode)
     {
-        int off = get_byte(s);
-        if (off == EOF) {
+        int off;
+        int lsb = get_byte(s);
+        if (lsb == EOF) {
             s->err = "truncated input file";
             return 1;
         }
-        if (off == 255) // Detect ending
+        if (lsb == 255) // Detect ending
             return 1;
-        if (off > 127) {
-            int msb = off;
-            int lsb = get_byte(s);
+        if (lsb & 1) {
+            int msb = get_byte(s);
             if (lsb == EOF) {
                 s->err = "truncated input file";
                 return 1;
             }
-            off = ((msb << 8) | lsb) & 0x7FFF;
-            DPRINTF("offset(%x:%x=%d) ", msb, lsb, off);
+            off = ((lsb >> 1) << 8) | msb;
+            DPRINTF("offset(%x:%x=%d) ", lsb, msb, off);
         } else {
-            DPRINTF("offset(%x=%d) ", off, off);
+            off = lsb >> 1;
+            DPRINTF("offset(%x=%d) ", lsb, off);
         }
         s->offset = off;
         return 0;

@@ -2,7 +2,7 @@
 ; ---------------------------------
 ;
 ; Decompress ZX02 data in ZX1 mode (6502 optimized format), optimized for speed
-; and size XXX bytes code, XX.X cycles/byte in test file.
+; and size 144 bytes code, 56.0 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 -1 input.bin output.zx1
@@ -88,23 +88,23 @@ dzx0s_new_offset
 
               ; Get low part of offset, a literal 7 bits
               lda   (ZX0_src), y
-              bpl   skip  ; Ok, offset is 7 bits only
               inc   ZX0_src
               bne   @+
               inc   ZX0_src+1
 @
-              and   #$7F
+              lsr
+              bcc   offset_ok   ; Ok, offset is 7 bits only
               cmp   #$7F
               beq   exit  ; Read a 127, signals the end
               sta   offset+1 ; This is now the "high" part
 
               ; Get low part of offset, a literal 8 bits
               lda   (ZX0_src), y
-skip
               inc   ZX0_src
               bne   @+
               inc   ZX0_src+1
 @
+offset_ok
               sta   offset
 
               ; And get the copy length.
@@ -121,6 +121,7 @@ get_elias
               bne   elias_start
 
 elias_get     ; Read next data bit to result
+              txa
               asl   bitr
               rol   @
               tax
@@ -140,7 +141,6 @@ elias_start
               sta   bitr
 
 elias_skip1
-              txa
               bcs   elias_get
               ; Got ending bit, stop reading
 exit
