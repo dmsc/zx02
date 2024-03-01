@@ -103,16 +103,20 @@ unsigned char *compress(BLOCK *optimal, zx02_state *s, int *output_size, int *de
     BLOCK *prev;
     BLOCK *next;
     int length;
+    int optbits = optimal->bits;
     int i;
     int last_offset = s->initial_offset;
 
     /* calculate and allocate output buffer */
-    if (s->zx1_mode)
+    if (s->zx1_mode) {
         /* we need to add 9 bits for END marker */
         *output_size = (optimal->bits + 9 + 7) / 8;
-    else
+        optbits = optimal->bits + 9;
+    } else {
         /* we need to add 18 bits for END marker */
         *output_size = (optimal->bits + 18 + 7) / 8;
+        optbits = optimal->bits + 18;
+    }
 
     output_data = (unsigned char *)malloc(*output_size);
     bit_size = 0;
@@ -215,6 +219,14 @@ unsigned char *compress(BLOCK *optimal, zx02_state *s, int *output_size, int *de
     else
         write_interlaced_elias_gamma(s, 256);
 
+    int real_size = (bit_size + 7) / 8;
+    if( real_size != *output_size )
+    {
+        fprintf(stderr, "WARNING: optimal/real sizes mismatch by %d bytes\n",
+                *output_size - real_size);
+        *output_size = real_size;
+    }
+    fprintf(stderr, "bit size data: opt %d bits (%d bytes), real %d bits (%d bytes)\n", optbits, *output_size, bit_size, (bit_size + 7) / 8);
     DPRINTF("\nbit size TOTAL: %d bits (%d bytes)\n", bit_size, (bit_size + 7) / 8);
     /* done! */
     return output_data;
