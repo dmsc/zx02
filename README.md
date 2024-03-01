@@ -118,6 +118,12 @@ The compressor accepts the following options:
   decompressor code, in the `zx0_ini_block` the first byte is the starting
   offset minus 1.
 
+* **-m _n_**
+
+  Use `n` as the maximum match offset to search and encode. Using a smaller
+  maximum offset is faster, and can be useful when streaming the decompression
+  data, as old data can be discarded after the offset.
+
 
 ### Options incompatible with standard decompressor
 

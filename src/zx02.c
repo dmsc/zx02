@@ -53,6 +53,7 @@ void print_usage(const char *prog) {
             "  -1      ZX1 offset format\n"
             "  -o <n>  Use 'n' as starting offset\n"
             "  -p <n>  Skip 'n' bytes at input (compress with pre-buffer)\n"
+            "  -m <n>  Compress with max offset 'n' bytes\n"
             "  -q      Quick non-optimal compression\n",
             prog);
     exit(1);
@@ -65,6 +66,7 @@ int main(int argc, char *argv[]) {
     s->initial_offset = 1;
     s->offset_limit = MAX_OFFSET_ZX02;
 
+    int set_max_offset = 0;
     int force_overwrite = FALSE;
     char *input_name = 0;
     char *output_name = 0;
@@ -108,6 +110,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'o':
             case 'p':
+            case 'm':
                 if (arg[2] == ':' || arg[2] == '=')
                     num = atoi(arg + 3);
                 else if (!arg[2] && i < argc - 1)
@@ -117,12 +120,9 @@ int main(int argc, char *argv[]) {
                     print_usage(argv[0]);
                 }
                 if (opt == 'o') {
-                    if (num < 1 || num > MAX_OFFSET_ZX02) {
-                        fprintf(stderr, "ERROR: offset must be between 1 and %d.\n",
-                                MAX_OFFSET_ZX02);
-                        exit(1);
-                    }
                     s->initial_offset = num;
+                } else  if (opt == 'm') {
+                    set_max_offset = num;
                 } else {
                     if (num < 0) {
                         fprintf(stderr, "ERROR: skipped bytes must be positive.\n");
@@ -144,6 +144,21 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "ERROR: extra argument '%s'\n", argv[i]);
             print_usage(argv[0]);
         }
+    }
+
+    if(set_max_offset) {
+        if(set_max_offset > s->offset_limit || set_max_offset < 1) {
+            fprintf(stderr, "ERROR: max offset must be between 1 and %d.\n",
+                    s->offset_limit);
+            exit(1);
+        }
+        s->offset_limit = set_max_offset;
+    }
+
+    if (s->initial_offset < 1 || s->initial_offset > s->offset_limit) {
+        fprintf(stderr, "ERROR: initial offset must be between 1 and %d.\n",
+                s->offset_limit);
+        exit(1);
     }
 
     if (!input_name) {
