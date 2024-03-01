@@ -2,7 +2,7 @@
 ; ----------------------------
 ;
 ; Decompress ZX02 data (6502 optimized format), optimized for minimal size:
-;  130 bytes code, 72.6 cycles/byte in test file.
+;  121 bytes code, 81.5 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 input.bin output.zx0
@@ -14,70 +14,64 @@
 ZP=$80
 
 offset          equ ZP+0
-ZX0_src         equ ZP+2
-ZX0_dst         equ ZP+4
-bitr            equ ZP+6
+bitr            equ ZP+2
+ZX0_dst         equ ZP+3
+ZX0_src         equ ZP+5
 pntr            equ ZP+7
+setx            equ ZP+9
 
             ; Initial values for offset, source, destination and bitr
 zx0_ini_block
-            .by $00, $00, <comp_data, >comp_data, <out_addr, >out_addr, $80
+            .by $00, $00, $80, <out_addr, >out_addr, <comp_data, >comp_data
 
 ;--------------------------------------------------
 ; Decompress ZX0 data (6502 optimized format)
 
 full_decomp
               ; Get initialization block
-              ldy #7
+              ldx #6
 
-copy_init     lda zx0_ini_block-1, y
-              sta offset-1, y
-              dey
-              bne copy_init
+copy_init     lda zx0_ini_block,x
+              sta offset,x
+              dex
+              bpl copy_init
+
+              ; Init: X = -2
+              dex
 
 ; Decode literal: Ccopy next N bytes from compressed file
 ;    Elias(length)  byte[1]  byte[2]  ...  byte[N]
 decode_literal
+              ldy   #1
               jsr   get_elias
-
-cop0          jsr   get_byte
               jsr   put_byte
-              bne   cop0
-
-              asl   bitr
               bcs   dzx0s_new_offset
 
 ; Copy from last offset (repeat N bytes from last offset)
 ;    Elias(length)
+              iny
               jsr   get_elias
 dzx0s_copy
-              lda   ZX0_dst
-              sbc   offset  ; C=0 from get_elias
-              sta   pntr
-              lda   ZX0_dst+1
-              sbc   offset+1
-              sta   pntr+1
+              ; C=0 from get_elias
+sbc1          lda   ZX0_dst+2,x
+              sbc   offset+2,x
+              sta   pntr+2,x
+              inx
+              bne   sbc1
 
-cop1
-              lda   (pntr), y
-              inc   pntr
-              bne   @+
-              inc   pntr+1
-@             jsr   put_byte
-              bne   cop1
-
-              asl   bitr
+              jsr   put_byte
               bcc   decode_literal
 
 ; Copy from new offset (repeat N bytes from new offset)
 ;    Elias(MSB(offset))  LSB(offset)  Elias(length-1)
 dzx0s_new_offset
               ; Read elias code for high part of offset
+              iny
               jsr   get_elias
               beq   exit  ; Read a 0, signals the end
               ; Decrease and divide by 2
-              dex
-              txa
+              dey
+              tya
               lsr   @
               sta   offset+1
 
@@ -90,26 +84,20 @@ dzx0s_new_offset
 
               ; And get the copy length.
               ; Start elias reading with the bit already in carry:
-              ldx   #1
+              ldy   #1
               jsr   elias_skip1
 
-              inx
+              iny
               bcc   dzx0s_copy
 
 ; Read an elias-gamma interlaced code.
 ; ------------------------------------
-get_elias
-              ; Initialize return value to #1
-              ldx   #1
-              bne   elias_start
-
-elias_get     ; Read next data bit to result
+elias_loop    ; Read next data bit to result
               asl   bitr
               rol   @
-              tax
+              tay
 
-elias_start
-              ; Get one bit
+get_elias     ; Get one bit
               asl   bitr
               bne   elias_skip1
 
@@ -119,27 +107,31 @@ elias_start
               rol   @
               sta   bitr
 
-elias_skip1
-              txa
-              bcs   elias_get
+elias_skip1   tya
+              bcs   elias_loop
               ; Got ending bit, stop reading
               rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 get_byte
-              lda   (ZX0_src), y
-              inc   ZX0_src
+              lda   (ZX0_src+2,x)
+              inc   ZX0_src+2,x
               bne   @+
-              inc   ZX0_src+1
+              inc   ZX0_src+3,x
 exit
 @             rts
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-put_byte
-              sta   (ZX0_dst),y
+put_byte      stx   setx
+ploop         ldx   setx
+              jsr   get_byte
+              ldx   #$FE
+              sta   (ZX0_dst+2,x)
               inc   ZX0_dst
               bne   @+
               inc   ZX0_dst+1
-@             dex
+@             dey
+              bne   ploop
+              asl   bitr
               rts
 
