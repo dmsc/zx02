@@ -231,5 +231,7 @@ unsigned char *compress(zx02_state *s, int *output_size, int *delta) {
     fprintf(stderr, "bit size data: opt %d bits (%d bytes), real %d bits (%d bytes)\n", optbits, *output_size, bit_size, (bit_size + 7) / 8);
     DPRINTF("\nbit size TOTAL: %d bits (%d bytes)\n", bit_size, (bit_size + 7) / 8);
     /* done! */
+    free(s->optimal);
+    s->optimal = 0;
     return output_data;
 }

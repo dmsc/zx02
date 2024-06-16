@@ -25,18 +25,23 @@
  */
 
 #pragma once
+#include <stdint.h>
 
 typedef struct block_t {
     struct block_t *chain;
-    struct block_t *ghost_chain;
+    struct block_t *unused_chain;
     int bits;
     int index;
     int offset;
     int references;
 } BLOCK;
 
+// Create and free the block memory
+struct block_mem_t *block_mem_new();
+void block_mem_free(struct block_mem_t *);
+
 // Allocat a new block into the given chain
-BLOCK *allocate(int bits, int index, int offset, BLOCK *chain);
+BLOCK *allocate(struct block_mem_t *, int bits, int index, int offset, BLOCK *chain);
 // Assign (copy) a block from another, making the old one available.
-void assign(BLOCK **ptr, BLOCK *chain);
+void assign(struct block_mem_t *, BLOCK **ptr, BLOCK *chain);
 

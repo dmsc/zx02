@@ -31,30 +31,64 @@
 
 #define QTY_BLOCKS 10000
 
-BLOCK *ghost_root = NULL;
-BLOCK *dead_array = NULL;
-int dead_array_size = 0;
+// Linked list of allocations
+struct alloc_array_t {
+    BLOCK data[QTY_BLOCKS];
+    struct alloc_array_t *next;
+};
 
-BLOCK *allocate(int bits, int index, int offset, BLOCK *chain) {
+struct block_mem_t {
+    BLOCK *unused_list;
+    struct alloc_array_t *free_list;
+    int free_array_size;
+};
+
+struct block_mem_t *block_mem_new() {
+    struct block_mem_t *bm = calloc(sizeof(struct block_mem_t), 1);
+    bm->unused_list = NULL;
+    bm->free_list = NULL;
+    bm->free_array_size = 0;
+    return bm;
+}
+
+void block_mem_free(struct block_mem_t *bm) {
+    // Free the array list
+    struct alloc_array_t *ptr = bm->free_list;
+    while(ptr) {
+        struct alloc_array_t *next = ptr->next;
+        free(ptr);
+        ptr = next;
+    }
+    free(bm);
+}
+
+BLOCK *allocate(struct block_mem_t *bm, int bits, int index, int offset, BLOCK *chain) {
     BLOCK *ptr;
 
-    if (ghost_root) {
-        ptr = ghost_root;
-        ghost_root = ptr->ghost_chain;
+    // Check if we have any unused block, and reuse
+    if (bm->unused_list) {
+        ptr = bm->unused_list;
+        bm->unused_list = ptr->unused_chain;
+        // If the unused block points to another block, check if that block
+        // becomes unused also.
         if (ptr->chain && !--ptr->chain->references) {
-            ptr->chain->ghost_chain = ghost_root;
-            ghost_root = ptr->chain;
+            ptr->chain->unused_chain = bm->unused_list;
+            bm->unused_list = ptr->chain;
         }
     } else {
-        if (!dead_array_size) {
-            dead_array = (BLOCK *)malloc(QTY_BLOCKS * sizeof(BLOCK));
-            if (!dead_array) {
+        // Check if we have available new blocks
+        if (!bm->free_array_size) {
+            // No, we need to allocate a new array of blocks
+            struct alloc_array_t *old = bm->free_list;
+            bm->free_list = malloc(sizeof(struct alloc_array_t));
+            if (!bm->free_list) {
                 fprintf(stderr, "Error: Insufficient memory\n");
                 exit(1);
             }
-            dead_array_size = QTY_BLOCKS;
+            bm->free_list->next = old;
+            bm->free_array_size = QTY_BLOCKS;
         }
-        ptr = &dead_array[--dead_array_size];
+        ptr = &bm->free_list->data[--(bm->free_array_size)];
     }
     ptr->bits = bits;
     ptr->index = index;
@@ -66,11 +100,11 @@ BLOCK *allocate(int bits, int index, int offset, BLOCK *chain) {
     return ptr;
 }
 
-void assign(BLOCK **ptr, BLOCK *chain) {
+void assign(struct block_mem_t *bm, BLOCK **ptr, BLOCK *chain) {
     chain->references++;
     if (*ptr && !--(*ptr)->references) {
-        (*ptr)->ghost_chain = ghost_root;
-        ghost_root = *ptr;
+        (*ptr)->unused_chain = bm->unused_list;
+        bm->unused_list = *ptr;
     }
     *ptr = chain;
 }
