@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
         } else if (!input_name)
             input_name = argv[i];
         else if (!output_name)
-            output_name = argv[i];
+            output_name = strdup(argv[i]);
         else {
             fprintf(stderr, "ERROR: extra argument '%s'\n", argv[i]);
             print_usage(argv[0]);
@@ -218,9 +218,14 @@ int main(int argc, char *argv[]) {
     fclose(ifp);
 
     /* check output file */
-    if (!force_overwrite && fopen(output_name, "rb") != NULL) {
-        fprintf(stderr, "ERROR: Already existing output file %s\n", output_name);
-        exit(1);
+    if (!force_overwrite)
+    {
+        ofp = fopen(output_name, "rb");
+        if (ofp != NULL) {
+            fclose(ofp);
+            fprintf(stderr, "ERROR: Already existing output file %s\n", output_name);
+            exit(1);
+        }
     }
 
     /* create output file */
@@ -255,6 +260,12 @@ int main(int argc, char *argv[]) {
     printf("File%s compressed%s from %d to %d bytes! (delta %d)\n",
            (s->skip ? " partially" : ""), (s->backwards_mode ? " backwards" : ""),
            s->input_size - s->skip, output_size, delta);
+
+    /* free memory */
+    free(output_data);
+    free(s->input_data);
+    free(s);
+    free(output_name);
 
     return 0;
 }
