@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include "zx02.h"
+#include "memory.h"
 
 #ifndef NDEBUG
 #define DPRINTF(...) fprintf(stderr, __VA_ARGS__)
@@ -99,9 +100,10 @@ void write_interlaced_elias_gamma(zx02_state *s, int value) {
         write_bit(!!s->elias_ending_bit);
 }
 
-unsigned char *compress(BLOCK *optimal, zx02_state *s, int *output_size, int *delta) {
+unsigned char *compress(zx02_state *s, int *output_size, int *delta) {
     BLOCK *prev;
     BLOCK *next;
+    BLOCK *optimal = s->optimal;
     int length;
     int optbits = optimal->bits;
     int i;

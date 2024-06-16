@@ -235,8 +235,8 @@ int main(int argc, char *argv[]) {
         reverse(s->input_data, s->input_data + s->input_size - 1);
 
     /* generate output file */
-    BLOCK *optim = optimize(s);
-    output_data = compress(optim, s, &output_size, &delta);
+    optimize(s);
+    output_data = compress(s, &output_size, &delta);
 
     /* conditionally reverse output file */
     if (s->backwards_mode)

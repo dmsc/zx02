@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include "zx02.h"
+#include "memory.h"
 
 #define QTY_BLOCKS 10000
 

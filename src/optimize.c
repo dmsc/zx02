@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include "zx02.h"
+#include "memory.h"
 
 #define MAX_SCALE 50
 
@@ -65,7 +66,7 @@ int offset_bits(zx02_state *s, int value) {
         return 8 + elias_gamma_bits(s, value / 128 + 1);
 }
 
-BLOCK *optimize(zx02_state *s) {
+void optimize(zx02_state *s) {
     BLOCK **last_literal;
     BLOCK **last_match;
     BLOCK **optimal;
@@ -173,5 +174,5 @@ BLOCK *optimize(zx02_state *s) {
 
     printf("]\n");
 
-    return optimal[s->input_size - 1];
+    s->optimal = optimal[s->input_size - 1];
 }
