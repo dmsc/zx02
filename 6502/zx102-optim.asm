@@ -2,7 +2,7 @@
 ; ---------------------------------
 ;
 ; Decompress ZX02 data in ZX1 mode (6502 optimized format), optimized for speed
-; and size 143 bytes code, TODO cycles/byte in test file.
+; and size 140 bytes code, TODO cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 -1 input.bin output.zx1
@@ -13,15 +13,15 @@
 
 ZP=$80
 
-offset          equ ZP+0
-ZX0_src         equ ZP+2
-ZX0_dst         equ ZP+4
-bitr            equ ZP+6
-pntr            equ ZP+7
+offset_hi       equ ZP+0
+ZX0_src         equ ZP+1
+ZX0_dst         equ ZP+3
+bitr            equ ZP+5
+pntr            equ ZP+6
 
-            ; Initial values for offset, source, destination and bitr
+            ; Initial values for offset_hi, source, destination, bitr and pntr
 zx0_ini_block
-            .by $00, $00, <comp_data, >comp_data, <out_addr, >out_addr, $80
+            .by $00, <comp_data, >comp_data, <out_addr, >out_addr, $80, $ff
 
 ;--------------------------------------------------
 ; Decompress ZX0 data (6502 optimized format)
@@ -31,7 +31,7 @@ full_decomp
               ldy #7
 
 copy_init     lda zx0_ini_block-1, y
-              sta offset-1, y
+              sta offset_hi-1, y
               dey
               bne copy_init
 
@@ -58,11 +58,8 @@ cop0          lda   (ZX0_src), y
 ;    Elias(length)
               jsr   get_elias
 dzx0s_copy
-              tya
-              sbc   offset  ; C=0 from get_elias
-              sta   pntr
               lda   ZX0_dst+1
-              sbc   offset+1
+              sbc   offset_hi  ; C=0 from get_elias
               sta   pntr+1
 
 cop1
@@ -96,7 +93,7 @@ dzx0s_new_offset
               bcc   offset_ok   ; Ok, offset is 7 bits only
               cmp   #$7F
               beq   exit  ; Read a 127, signals the end
-              sta   offset+1 ; This is now the "high" part
+              sta   offset_hi ; This is now the "high" part
 
               ; Get low part of offset, a literal 8 bits
               lda   (ZX0_src), y
@@ -105,7 +102,8 @@ dzx0s_new_offset
               inc   ZX0_src+1
 @
 offset_ok
-              sta   offset
+              eor   #$ff
+              sta   pntr
 
               ; And get the copy length.
               jsr   get_elias
