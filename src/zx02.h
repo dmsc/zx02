@@ -38,6 +38,7 @@ typedef struct zx02_state_t {
     int elias_short_code;
     int elias_ending_bit;
     int zx1_mode;
+    int skip_eor;
     int offset_limit;
     struct block_t *optimal;
 } zx02_state;

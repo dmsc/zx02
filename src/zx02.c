@@ -108,6 +108,9 @@ int main(int argc, char *argv[]) {
                 if (s->offset_limit > MAX_OFFSET_ZX102)
                     s->offset_limit = MAX_OFFSET_ZX102;
                 break;
+            case 'x':
+                s->skip_eor = 1;
+                break;
             case 'o':
             case 'p':
             case 'm':

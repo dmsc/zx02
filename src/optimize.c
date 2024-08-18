@@ -63,6 +63,8 @@ int elias_gamma_bits_1(zx02_state *s, int value) {
 int offset_bits(zx02_state *s, int value) {
     if (s->zx1_mode)
         return (value > 127) ? 17 : 9;
+    else if (s->skip_eor)
+        return 8 + elias_gamma_bits(s, ((value - 1) ^ 255) / 128 + 1);
     else
         return 8 + elias_gamma_bits(s, value / 128 + 1);
 }

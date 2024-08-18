@@ -39,6 +39,10 @@ printf " -> Compressing ZX1 based format:"
 wrap ../build/zx02 -1 -f "$TEST" data.zx12
 stat -c " %s bytes" data.zx12
 
+printf " -> Compressing ZX0-x based format:"
+wrap ../build/zx02 -x -f "$TEST" data.zx02x
+stat -c " %s bytes" data.zx02x
+
 printf " -> Decompress ZX02 FAST:  "
 do_test test-fast.asm
 
@@ -53,4 +57,7 @@ do_test test-optim-1.asm
 
 printf " -> Decompress ZX02 -1 SMALL: "
 do_test test-small-1.asm
+
+printf " -> Decompress ZX02 -x OPTIM: "
+do_test test-optim-2.asm
 

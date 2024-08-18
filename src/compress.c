@@ -193,7 +193,19 @@ unsigned char *compress(zx02_state *s, int *output_size, int *delta) {
                     /* copy from new offset LSB */
                     write_byte(off & 255);
                 }
+            } else if (s->skip_eor) {
+                int off = (optimal->offset - 1) ^ 255;
+                /* copy from new offset MSB */
+                write_interlaced_elias_gamma(s, off / 128 + 1);
+
+                /* copy from new offset LSB */
+                DPRINTF(" ");
+                write_byte((off % 128) << 1);
+
+                /* copy from new offset length */
+                backtrack = TRUE;
             } else {
+
                 /* copy from new offset MSB */
                 write_interlaced_elias_gamma(s, (optimal->offset - 1) / 128 + 1);
 
