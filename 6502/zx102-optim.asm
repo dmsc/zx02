@@ -81,7 +81,7 @@ cop1
 ;    MSB(offset>127)  LSB(offset>127)  Elias(length-1)
 ;    LSB(offset<128)                   Elias(length-1)
 dzx0s_new_offset
-              sty   offset+1    ; Clear offset MSB
+              sty   offset_hi   ; Clear offset MSB
 
               ; Get low part of offset, a literal 7 bits
               lda   (ZX0_src), y
