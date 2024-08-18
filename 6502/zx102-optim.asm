@@ -2,7 +2,7 @@
 ; ---------------------------------
 ;
 ; Decompress ZX02 data in ZX1 mode (6502 optimized format), optimized for speed
-; and size 140 bytes code, TODO cycles/byte in test file.
+; and size 140 bytes code, 53.4 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 -1 input.bin output.zx1
