@@ -59,7 +59,7 @@ how the offsets are stored:
 There are three 6502 assembly decoders, all with ROM-able code and using 8
 bytes of zero-page:
 
-* Fast and small decoder, 138 bytes: [zx02-optim.asm](6502/zx02-optim.asm)
+* Fast and small decoder, 137 bytes: [zx02-optim.asm](6502/zx02-optim.asm)
   **This is the recommended decompressor for most users**
 * Smallest decoder, 121 bytes: [zx02-small.asm](6502/zx02-small.asm)
 * Faster decoder, 175 bytes: [zx02-fast.asm](6502/zx02-fast.asm)

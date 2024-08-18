@@ -2,7 +2,7 @@
 ; ----------------------------
 ;
 ; Decompress ZX02 data (6502 optimized format), optimized for speed and size
-;  138 bytes code, 57.6 cycles/byte in test file.
+;  137 bytes code, TODO cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 input.bin output.zx0
@@ -60,7 +60,7 @@ cop0          lda   (ZX0_src), y
               inx
               jsr   get_elias
 dzx0s_copy
-              lda   ZX0_dst
+              tya
               sbc   offset  ; C=0 from get_elias
               sta   pntr
               lda   ZX0_dst+1
@@ -68,14 +68,14 @@ dzx0s_copy
               sta   pntr+1
 
 cop1
+              ldy   ZX0_dst
               lda   (pntr), y
-              inc   pntr
-              bne   @+
-              inc   pntr+1
+              ldy   #0
 @             sta   (ZX0_dst),y
               inc   ZX0_dst
               bne   @+
               inc   ZX0_dst+1
+              inc   pntr+1
 @             dex
               bne   cop1
 
