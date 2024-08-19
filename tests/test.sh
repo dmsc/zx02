@@ -1,13 +1,6 @@
 #!/bin/sh
 set -e
 
-TEST="$1"
-
-if [ ! -f "$TEST" ]; then
-    echo "ERROR: file '$TEST' does not exists"
-    exit 1
-fi
-
 wrap() {
     cmdout=$($* 2>&1)
     if [ "$?" -ne 0 ]; then
@@ -27,30 +20,43 @@ do_test() {
         printf "\e[41m TEST NOT PASSED \e[0m\n" && false )
 }
 
-size=$(stat -c %s "$TEST")
+test_one() {
+    TEST="$1"
 
-echo "-----------------------------------------------------"
-echo "TESTING FILE '$TEST', $size bytes."
-printf " -> Compressing ZX0 based format:"
-wrap ../build/zx02 -f "$TEST" data.zx02
-stat -c " %s bytes" data.zx02
+    echo "-----------------------------------------------------"
+    if [ ! -f "$TEST" ]; then
+        printf "\e[41mERROR: file '$TEST' does not exists \e[0m\n"
+        return
+    fi
 
-printf " -> Compressing ZX1 based format:"
-wrap ../build/zx02 -1 -f "$TEST" data.zx12
-stat -c " %s bytes" data.zx12
+    size=$(stat -c %s "$TEST")
 
-printf " -> Decompress ZX02 FAST:  "
-do_test test-fast.asm
+    echo "TESTING FILE '$TEST', $size bytes."
+    printf " -> Compressing ZX0 based format:"
+    wrap ../build/zx02 -f "$TEST" data.zx02
+    stat -c " %s bytes" data.zx02
 
-printf " -> Decompress ZX02 OPTIM: "
-do_test test-optim.asm
+    printf " -> Compressing ZX1 based format:"
+    wrap ../build/zx02 -1 -f "$TEST" data.zx12
+    stat -c " %s bytes" data.zx12
 
-printf " -> Decompress ZX02 SMALL: "
-do_test test-small.asm
+    printf " -> Decompress ZX02 FAST:  "
+    do_test test-fast.asm
 
-printf " -> Decompress ZX02 -1 OPTIM: "
-do_test test-optim-1.asm
+    printf " -> Decompress ZX02 OPTIM: "
+    do_test test-optim.asm
 
-printf " -> Decompress ZX02 -1 SMALL: "
-do_test test-small-1.asm
+    printf " -> Decompress ZX02 SMALL: "
+    do_test test-small.asm
 
+    printf " -> Decompress ZX02 -1 OPTIM: "
+    do_test test-optim-1.asm
+
+    printf " -> Decompress ZX02 -1 SMALL: "
+    do_test test-small-1.asm
+}
+
+while test -n "$1"; do
+    test_one "$1"
+    shift
+done
