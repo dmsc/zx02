@@ -2,7 +2,7 @@
 ; ----------------------------
 ;
 ; Decompress ZX02 data (6502 optimized format), optimized for speed and size
-;  134 bytes code, 54.9 cycles/byte in test file.
+;  133 bytes code, 54.9 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 input.bin output.zx0
@@ -30,8 +30,8 @@ full_decomp
               ; Get initialization block
               ldy #7
 
-copy_init     lda zx0_ini_block-1, y
-              sta offset_hi-1, y
+copy_init     ldx zx0_ini_block-1, y
+              stx offset_hi-1, y
               dey
               bne copy_init
 
