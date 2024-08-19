@@ -2,12 +2,12 @@
 ; ----------------------------
 ;
 ; Decompress ZX02 data in X mode (6502 optimized format), optimized for speed
-; and size 130 bytes code, 54.9 cycles/byte in test file.
+; and size 129 bytes code, 54.9 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 -x input.bin output.zx0
 ;
-; (c) 2022 DMSC
+; (c) 2024 DMSC
 ; Code under MIT license, see LICENSE file.
 
 
@@ -98,8 +98,6 @@ dzx0s_new_offset
               bne   @+
               inc   ZX0_src+1
 @
-              ; Divide by 2
-              ror   @
               sta   pntr
 
               ; And get the copy length.

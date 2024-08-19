@@ -62,7 +62,7 @@ void write_byte(int value) {
 
 void write_bit(int value) {
     if (backtrack) {
-        if (value)
+        if (value && backtrack == TRUE)
             output_data[output_index - 1] |= 1;
         backtrack = FALSE;
         DPRINTF("%c", value ? 'B' : 'b');
@@ -194,16 +194,20 @@ unsigned char *compress(zx02_state *s, int *output_size, int *delta) {
                     write_byte(off & 255);
                 }
             } else if (s->skip_eor) {
-                int off = (optimal->offset - 1) ^ 255;
+                int off = (optimal->offset - 1);
+
+                /* Get bit that we need to write into next code */
+                int bit = length != 2;
+
                 /* copy from new offset MSB */
-                write_interlaced_elias_gamma(s, off / 128 + 1);
+                write_interlaced_elias_gamma(s, ((off / 128) & 0xFE) + bit + 1);
 
                 /* copy from new offset LSB */
                 DPRINTF(" ");
-                write_byte((off % 128) << 1);
+                write_byte((off & 0xFF) ^ 0xFF);
 
                 /* copy from new offset length */
-                backtrack = TRUE;
+                backtrack = 2;
             } else {
 
                 /* copy from new offset MSB */
@@ -230,6 +234,8 @@ unsigned char *compress(zx02_state *s, int *output_size, int *delta) {
     write_bit(1);
     if (s->zx1_mode)
         write_byte(255);
+    else if (s->skip_eor)
+        write_interlaced_elias_gamma(s, 256);
     else
         write_interlaced_elias_gamma(s, 256);
 
