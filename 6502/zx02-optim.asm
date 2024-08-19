@@ -2,7 +2,7 @@
 ; ----------------------------
 ;
 ; Decompress ZX02 data (6502 optimized format), optimized for speed and size
-;  133 bytes code, 54.9 cycles/byte in test file.
+;  132 bytes code, 54.9 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 input.bin output.zx0
@@ -38,7 +38,7 @@ copy_init     ldx zx0_ini_block-1, y
 ; Decode literal: Ccopy next N bytes from compressed file
 ;    Elias(length)  byte[1]  byte[2]  ...  byte[N]
 decode_literal
-              ldx   #1
+              inx
               jsr   get_elias
 
 cop0          lda   (ZX0_src), y
