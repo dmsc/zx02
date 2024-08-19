@@ -2,7 +2,7 @@
 ; ---------------------------------
 ;
 ; Decompress ZX02 data in ZX1 mode (6502 optimized format), optimized for speed
-; and size 140 bytes code, 53.4 cycles/byte in test file.
+; and size 138 bytes code, 53.0 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 -1 input.bin output.zx1
@@ -30,14 +30,15 @@ full_decomp
               ; Get initialization block
               ldy #7
 
-copy_init     lda zx0_ini_block-1, y
-              sta offset_hi-1, y
+copy_init     ldx zx0_ini_block-1, y
+              stx offset_hi-1, y
               dey
               bne copy_init
 
 ; Decode literal: Ccopy next N bytes from compressed file
 ;    Elias(length)  byte[1]  byte[2]  ...  byte[N]
 decode_literal
+              inx
               jsr   get_elias
 
 cop0          lda   (ZX0_src), y
@@ -56,6 +57,7 @@ cop0          lda   (ZX0_src), y
 
 ; Copy from last offset (repeat N bytes from last offset)
 ;    Elias(length)
+              inx
               jsr   get_elias
 dzx0s_copy
               lda   ZX0_dst+1
@@ -106,6 +108,7 @@ offset_ok
               sta   pntr
 
               ; And get the copy length.
+              inx
               jsr   get_elias
 
               inx
@@ -113,18 +116,13 @@ offset_ok
 
 ; Read an elias-gamma interlaced code.
 ; ------------------------------------
-get_elias
-              ; Initialize return value to #1
-              ldx   #1
-              bne   elias_start
-
 elias_get     ; Read next data bit to result
               txa
               asl   bitr
               rol   @
               tax
 
-elias_start
+get_elias
               ; Get one bit
               asl   bitr
               bne   elias_skip1
