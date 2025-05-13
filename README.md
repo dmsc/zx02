@@ -110,13 +110,13 @@ The compressor accepts the following options:
 * **-o _n_**
 
   Use `n` as starting offset. The standard decompressor uses the value `1` as
-  starting offset for matches - this is a good overall value, but certain files
-  could compress better with a different value - for example, 16 bit data could
-  benefit using a starting offset of `2`.
+  starting offset for matches - this is a good overall value, as it allows to
+  encode a repeating value at the start of the buffer with only one initial
+  byte. Never the less, certain files could compress better with a different
+  value - for example, 16 bit data could benefit using a starting offset of `2`.
 
   To decompress a file compressed with this option, you need to alter the
-  decompressor code, in the `zx0_ini_block` the first byte is the starting
-  offset minus 1.
+  decompressor code, in the `zx0_ini_block`.
 
 * **-m _n_**
 

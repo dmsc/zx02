@@ -20,12 +20,19 @@ ZX0_src         equ ZP+5
 pntr            equ ZP+7
 setx            equ ZP+9
 
-            ; Initial values for offset, source, destination and bitr
+            ; Initial values for the de-compressor, the values are copied to
+            ; the ZP locations at the initialization:
 zx0_ini_block
-            .by $00, $00, $80, <out_addr, >out_addr, <comp_data, >comp_data
+            .by <0, >0  ; Initial offset - 1. See README for explanation (-o option).
+            .by $80     ; Initial value for the bit reservoir. Don't ever change.
+            .by <out_addr, >out_addr    ; Address to place decompressed data
+            .by <comp_data, >comp_data  ; Address of data to decompress.
 
 ;--------------------------------------------------
 ; Decompress ZX0 data (6502 optimized format)
+;
+; Reads data from 'comp_data' and writes the result to 'out_addr', until the
+; compressed data ends.
 
 full_decomp
               ; Get initialization block
@@ -39,7 +46,7 @@ copy_init     lda zx0_ini_block,x
               ; Init: X = -2
               dex
 
-; Decode literal: Ccopy next N bytes from compressed file
+; Decode literal: Copy next N bytes from compressed file
 ;    Elias(length)  byte[1]  byte[2]  ...  byte[N]
 decode_literal
               ldy   #1
