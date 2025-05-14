@@ -64,6 +64,15 @@ bytes of zero-page:
 * Smallest decoder, 121 bytes: [zx02-small.asm](6502/zx02-small.asm)
 * Faster decoder, 174 bytes: [zx02-fast.asm](6502/zx02-fast.asm)
 
+### Decompressing data in-place
+
+The 6502 decompressors support decompressing data in place if you properly
+keep the *end* of the compressed data at least `delta` bytes before the end of
+the output buffer.
+
+The optimal value of `delta` is reported by the compressor, and in the worst
+case this is 12 bytes for each 1024 bytes of expanded data.
+
 
 ## C decompressor
 
