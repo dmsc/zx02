@@ -42,7 +42,7 @@ int elias_gamma_bits(zx02_state *s, int value) {
     int bits = 1;
     // Return a really big number to limit range to valid values
     if (value < 1 || value > 0x100)
-        return 1024;
+        return 1<<20;
     // Optimization: don't send last 2 bits on limit value:
     if (s->elias_short_code && value == 0x100)
         bits = -1;
@@ -55,7 +55,7 @@ int elias_gamma_bits_1(zx02_state *s, int value) {
     if (value == 1)
         return elias_gamma_bits(s, 256);
     else if (value > 256)
-        return 1024;
+        return 1<<20;
     else
         return elias_gamma_bits(s, value - 1);
 }
