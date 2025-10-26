@@ -43,6 +43,9 @@ test_one() {
     printf " -> Decompress ZX02 FAST:  "
     do_test test-fast.asm
 
+    printf " -> Decompress ZX02 FAST2: "
+    do_test test-fast2.asm
+
     printf " -> Decompress ZX02 OPTIM: "
     do_test test-optim.asm
 
