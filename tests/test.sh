@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+CSV=0
+CSV_OUTPUT="results.csv"
+
 wrap() {
     cmdout=$($* 2>&1)
     if [ "$?" -ne 0 ]; then
@@ -18,6 +21,11 @@ do_test() {
         printf "%7d cycles, %2d.%1d cycles/byte: \e[42m TEST PASSED \e[0m\n" \
                "$cycles" "$(($cycles/$size))" "$(($cycles*10/$size%10))" || (
         printf "\e[41m TEST NOT PASSED \e[0m\n" && false )
+    if [ "$CSV" != "0" ]; then
+      printf "%s; %5d; %s; %7d; %2d.%1d\n" \
+             "$TEST" "$size" "$1" "$cycles" "$(($cycles/$size))" "$(($cycles*10/$size%10))" \
+             >> "$CSV_OUTPUT"
+    fi
 }
 
 test_one() {
@@ -43,6 +51,9 @@ test_one() {
     printf " -> Decompress ZX02 FAST:  "
     do_test test-fast.asm
 
+    printf " -> Decompress ZX02 FAST2: "
+    do_test test-fast2.asm
+
     printf " -> Decompress ZX02 OPTIM: "
     do_test test-optim.asm
 
@@ -55,6 +66,12 @@ test_one() {
     printf " -> Decompress ZX02 -1 SMALL: "
     do_test test-small-1.asm
 }
+
+if [ "$1" = "-csv" ]; then
+  CSV=1
+  shift
+  echo "File; File size; Decoder; Cycles; Cycles/byte" > $CSV_OUTPUT
+fi
 
 while test -n "$1"; do
     test_one "$1"
