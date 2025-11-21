@@ -14,6 +14,7 @@ wrap() {
 }
 
 do_test() {
+    rm -f OUT.BIN
     wrap mads "-l:${1%.*}.lst" "-t:${1%.*}.lab" "$1"
     wrap minisim -d "${1%.*}.obx"
     cycles=$(echo "$cmdout" | tail -1 | sed -e 's/^.*cycles://g')
