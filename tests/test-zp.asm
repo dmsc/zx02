@@ -13,6 +13,7 @@ out_addr = $2200
 
 start:
         jsr     full_decomp
+        sty     ZX0_dst
         jmp     save
 
         org  $6700

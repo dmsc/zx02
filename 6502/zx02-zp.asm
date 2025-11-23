@@ -3,7 +3,7 @@
 ;
 ; Decompress ZX02 data (6502 optimized format), optimized for code located
 ; at zero page.
-;  109 bytes code, 64.2 cycles/byte in test file.
+;  108 bytes code, 59.5 cycles/byte in test file.
 ;
 ; Compress with:
 ;    zx02 input.bin output.zx0
@@ -36,6 +36,7 @@ ini_pntr = ((out_addr-($FF+ini_offset))&$FF00) | ($FF&($100-ini_offset))
 ; compressed data ends.
 
 full_decomp
+              ldy   #<out_addr
 
 ; Decode literal: Copy next N bytes from compressed file
 ;    Elias(length)  byte[1]  byte[2]  ...  byte[N]
@@ -56,7 +57,7 @@ cop0          jsr   get1
               jsr   get_elias
 dzx0s_copy
 
-cop1          ldy   ZX0_dst
+cop1
 pntr = *+1
               lda.a ini_pntr,y
               jsr   put1
@@ -136,8 +137,8 @@ get1          lda   comp_data
 ; Store one byte to output.
 ; -------------------------
 ZX0_dst = *+1
-put1          sta   out_addr
-              inc   ZX0_dst
+put1          sta   $FF00&out_addr,y
+              iny
               bne   @+
               inc   ZX0_dst+1
               inc   pntr+1

@@ -62,7 +62,7 @@ bytes of zero-page:
 * Fast and small decoder, 132 bytes: [zx02-optim.asm](6502/zx02-optim.asm)
   **This is the recommended decompressor for most users**
 * Smallest decoder, 121 bytes: [zx02-small.asm](6502/zx02-small.asm)
-* A decoder optimized for code in zero-page, 109 bytes: [zx02-zp.asm](6502/zx02-zp.asm)
+* A decoder optimized for code in zero-page, 108 bytes: [zx02-zp.asm](6502/zx02-zp.asm)
 * Faster decoder, 166 bytes: [zx02-fast2.asm](6502/zx02-fast2.asm)
 
 ### Decompressing data in-place
