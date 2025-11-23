@@ -61,6 +61,9 @@ test_one() {
     printf " -> Decompress ZX02 SMALL: "
     do_test test-small.asm
 
+    printf " -> Decompress ZX02 ZP: "
+    do_test test-zp.asm
+
     printf " -> Decompress ZX02 -1 OPTIM: "
     do_test test-optim-1.asm
 
