@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "zx02.h"
 #include "memory.h"
@@ -126,6 +127,7 @@ unsigned char *compress(zx02_state *s, int *output_size, int *delta) {
         fprintf(stderr, "Error: Insufficient memory\n");
         exit(1);
     }
+    memset(output_data, 0, *output_size);
 
     /* un-reverse optimal sequence */
     prev = NULL;
